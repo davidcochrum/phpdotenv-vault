@@ -16,11 +16,11 @@ class DotEnvVaultError extends Exception { }
 
 class DotEnvVault extends Dotenv
 {
-    private $store;
-    private $parser;
-    private $loader;
-    private $repository;
-    private $dotenv_key;
+    private StoreInterface $store;
+    private ParserInterface $parser;
+    private LoaderInterface $loader;
+    private RepositoryInterface $repository;
+    private ?string $dotenv_key;
     public function __construct(
         StoreInterface $store,
         ParserInterface $parser,
@@ -72,13 +72,17 @@ class DotEnvVault extends Dotenv
             
             // Get environment from query params.
             parse_str($uri['query'], $params);
-            $vault_environment = $params['environment'] or throw new DotEnvVaultError('INVALID_DOTENV_KEY: Missing environment part.');
+            if (!($vault_environment = $params['environment'] ?? false)) {
+                throw new DotEnvVaultError('INVALID_DOTENV_KEY: Missing environment part.');
+            }
 
             # Getting ciphertext from correct environment in .env.vault
             $vault_environment = strtoupper($vault_environment);
             $environment_key = "DOTENV_VAULT_{$vault_environment}";
 
-            $ciphertext = getenv("{$environment_key}") or throw new DotEnvVaultError("NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment {$environment_key} in your .env.vault file. Run 'npx dotenv-vault build' to include it.");
+            if (!($ciphertext = getenv("{$environment_key}"))) {
+                throw new DotEnvVaultError("NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment {$environment_key} in your .env.vault file. Run 'npx dotenv-vault build' to include it.");
+            }
             
             array_push($keys, array('encrypted_key' => $pass, 'ciphertext' => $ciphertext));
         }
