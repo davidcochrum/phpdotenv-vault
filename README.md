@@ -1,13 +1,13 @@
 # PHP dotenv-vault [![PHP version](https://badge.fury.io/ph/dotenv-org%2Fphpdotenv-vault.svg)](https://badge.fury.io/ph/dotenv-org%2Fphpdotenv-vault)
 
-<img src="https://raw.githubusercontent.com/motdotla/dotenv/master/dotenv.svg" alt="dotenv-vault" align="right" width="200" />
+<img src="https://raw.githubusercontent.com/motdotla/dotenv/master/dotenv.svg" alt="dotenv-vault" style="text-align: right; width: 200px" />
 
 Extends the proven & trusted foundation of [phpdotenv](https://github.com/vlucas/phpdotenv), with a `.env.vault` file.
 
 The extended standard lets you load encrypted secrets from your `.env.vault` file in production (and other) environments. Brought to you by the same people that pioneered [dotenv-nodejs](https://github.com/motdotla/dotenv).
 
 * [🌱 Install](#-install)
-* [🏗️ Usage (.env)](#%EF%B8%8F-usage)
+* [🏗️ Usage (.env)](#-usage)
 * [🚀 Deploying (.env.vault) 🆕](#-deploying)
 * [🌴 Multiple Environments](#-manage-multiple-environments)
 * [❓ FAQ](#-faq)
@@ -85,7 +85,7 @@ SECRET_KEY="PRODUCTION_SECRETKEYGOESHERE"
 Rebuild your `.env.vault` file.
 
 ```shell
-npx dotenv-vault local build
+vendor/bin/dotenv-vault local:build
 ```
 
 View your `.env.keys` file. There is a production `DOTENV_KEY` that pairs with the `DOTENV_VAULT_PRODUCTION` cipher in your `.env.vault` file.
@@ -96,28 +96,28 @@ Your .env.vault fill be decrypted on boot, its production environment variables 
 
 #### 🔐 Vault Managed
 
-Sync your .env file. Run the push command and follow the instructions. [learn more](/docs/sync/quickstart)
+Sync your .env file. Run the push command and follow the instructions. [learn more](https://dotenv.org/docs/sync/quickstart)
 
-```
-$ npx dotenv-vault push
+```shell
+vendor/bin/dotenv-vault push
 ```
 
-Manage multiple environments with the included UI. [learn more](/docs/tutorials/environments)
+Manage multiple environments with the included UI. [learn more](https://dotenv.org/docs/tutorials/environments)
 
-```
-$ npx dotenv-vault open
+```shell
+vendor/bin/dotenv-vault open
 ```
 
 Build your `.env.vault` file with multiple environments.
 
-```
-$ npx dotenv-vault build
+```shell
+vendor/bin/dotenv-vault build
 ```
 
 Access your `DOTENV_KEY`.
 
-```
-$ npx dotenv-vault keys
+```shell
+vendor/bin/dotenv-vault keys
 ```
 
 Set the production `DOTENV_KEY` on your server, recommit your `.env.vault` file to code, and deploy. That's it!

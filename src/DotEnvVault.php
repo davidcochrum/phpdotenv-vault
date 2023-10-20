@@ -1,6 +1,7 @@
 <?php
 
 namespace DotenvVault;
+
 use Dotenv\Dotenv;
 use Dotenv\Loader\Loader;
 use Dotenv\Loader\LoaderInterface;
@@ -12,15 +13,19 @@ use Dotenv\Store\StoreBuilder;
 use Dotenv\Store\StoreInterface;
 use Exception;
 
-class DotEnvVaultError extends Exception { }
-
 class DotEnvVault extends Dotenv
 {
-    private StoreInterface $store;
-    private ParserInterface $parser;
-    private LoaderInterface $loader;
-    private RepositoryInterface $repository;
-    private ?string $dotenv_key;
+    /** @var StoreInterface */
+    private $store;
+    /** @var ParserInterface */
+    private $parser;
+    /** @var LoaderInterface */
+    private $loader;
+    /** @var RepositoryInterface */
+    private $repository;
+    /** @var string|null */
+    private $dotenv_key;
+
     public function __construct(
         StoreInterface $store,
         ParserInterface $parser,
@@ -34,6 +39,9 @@ class DotEnvVault extends Dotenv
         $this->repository = $repository;
     }
 
+    /**
+     * @throws DotEnvVaultError
+     */
     public function load()
     {
         $this->dotenv_key = getenv("DOTENV_KEY");

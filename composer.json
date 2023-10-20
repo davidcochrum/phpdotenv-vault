@@ -20,13 +20,29 @@
       "name": "dotenv",
       "email": "mot@dotenv.org",
       "homepage": "https://github.com/dotenv-org"
+    },
+    {
+      "name": "David Cochrum",
+      "email": "david@chrum.me",
+      "homepage": "https://chrum.me"
     }
+  ],
+  "bin": [
+    "dotenv-vault"
   ],
   "require": {
     "php": "^7.1.3 || ^8.0",
+    "ext-json": "*",
+    "ext-openssl": "*",
+    "guzzlehttp/guzzle": "^7.8",
+    "loilo/native-open": "^1.0",
+    "symfony/console": "^5.4",
     "vlucas/phpdotenv": "^5.5"
   },
   "require-dev": {
     "orchestra/testbench": "^6.36"
+  },
+  "config": {
+    "sort-packages": true
   }
 }
