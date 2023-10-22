@@ -2,11 +2,12 @@
 
 namespace DotenvVault\Services;
 
+use DotenvVault\BrowserInterface;
 use DotenvVault\DotEnvVaultError;
+use DotenvVault\FileClientInterface;
 use DotenvVault\Vars;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use Loilo\NativeOpen\NativeOpen;
+use GuzzleHttp\Exception\BadResponseException;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,6 +24,12 @@ class NewService
     private $io;
     /** @var QuestionHelper */
     private $helper;
+    /** @var BrowserInterface */
+    private $browser;
+    /** @var Client */
+    private $httpClient;
+    /** @var FileClientInterface */
+    private $fileClient;
     /** @var string */
     private $dotenvVault;
     /** @var bool */
@@ -30,8 +37,17 @@ class NewService
     /** @var string */
     private $requestUid;
 
-    public function __construct(InputInterface $input, OutputInterface $output, SymfonyStyle $io, QuestionHelper $helper, string $dotenvVault, bool $yes)
-    {
+    public function __construct(
+        InputInterface $input,
+        OutputInterface $output,
+        SymfonyStyle $io,
+        QuestionHelper $helper,
+        BrowserInterface $browser,
+        Client $httpClient,
+        FileClientInterface $fileClient,
+        string $dotenvVault,
+        bool $yes
+    ) {
         $this->input = $input;
         $this->output = $output;
         $this->io = $io;
@@ -39,6 +55,9 @@ class NewService
         $this->dotenvVault = $dotenvVault;
         $this->yes = $yes;
         $this->requestUid = Vars::generateRequestUid();
+        $this->httpClient = $httpClient;
+        $this->browser = $browser;
+        $this->fileClient = $fileClient;
     }
 
     /** @throws DotEnvVaultError */
@@ -48,7 +67,7 @@ class NewService
 
         // Step 1
         if (Vars::isMissingEnvVault()) {
-            file_put_contents(Vars::getVaultFilepath(), $this->getVaultFileContent(" # Generate vault identifiers at {$this->getUrl()}"));
+            $this->fileClient->write(Vars::getVaultFilepath(), $this->getVaultFileContent(" # Generate vault identifiers at {$this->getUrl()}"));
         }
 
         // Step 2 B
@@ -65,7 +84,7 @@ class NewService
             }
 
             $this->io->writeln("Adding {$vaultFilenameAndKey}");
-            file_put_contents(Vars::getVaultFilepath(), $this->getVaultFileContent($this->dotenvVault));
+            $this->fileClient->write(Vars::getVaultFilepath(), $this->getVaultFileContent($this->dotenvVault));
             $this->io->writeln([
                 "Added to {$vaultFilename} ({$vaultKey}=" . substr($this->dotenvVault, 0, 9) . "...)",
                 "",
@@ -93,7 +112,7 @@ class NewService
         }
 
         $this->io->writeln("Opening browser to {$newUrl}");
-        NativeOpen::open($newUrl);
+        $this->browser->open($newUrl);
         $this->io->writeln('Waiting for project vault (.env.vault) to be created');
 
         $this->check();
@@ -102,7 +121,6 @@ class NewService
     /** @throws DotEnvVaultError */
     private function check(): void
     {
-        $client = new Client();
         $checkCount = 0;
         $this->io->progressStart(100);
         $vaultUid = null;
@@ -110,10 +128,10 @@ class NewService
             $checkCount++;
             $this->io->progressAdvance();
             try {
-                $response = $client->post($this->checkUrl(), ['json' => ['requestUid' => $this->requestUid]]);
+                $response = $this->httpClient->post($this->checkUrl(), ['json' => ['requestUid' => $this->requestUid]]);
                 $data = json_decode($response->getBody());
                 $vaultUid = $data->data->vaultUid;
-            } catch (GuzzleException $e) {
+            } catch (BadResponseException $e) {
                 // check every 2 seconds
                 sleep(1);
                 $this->io->progressAdvance();
@@ -127,7 +145,7 @@ class NewService
         }
 
         // Step 3
-        file_put_contents(Vars::getVaultFilepath(), $this->getVaultFileContent($vaultUid));
+        $this->fileClient->write(Vars::getVaultFilepath(), $this->getVaultFileContent($vaultUid));
         $this->io->writeln([
             "Added to " . Vars::getVaultFilename() . " (" . Vars::getVaultKey() . "=" . substr($vaultUid, 0, 9) . "...)",
             "",
@@ -181,7 +199,7 @@ ENV;
     private function getPushOrPullCommand(): string
     {
         // tell dev to push if they already have a local .env file
-        if (file_exists(getcwd() . '/.env')) {
+        if ($this->fileClient->exists('.env')) {
             return 'push';
         }
 
@@ -191,9 +209,14 @@ ENV;
 
     private function getUrlWithProjectName(): string
     {
-        $composer = json_decode(file_get_contents(getcwd() . '/composer.json'));
-        $nameParts = explode('/', $composer->name);
-        $name = $nameParts[1] ?? $nameParts[0];
+        if ($this->fileClient->exists('composer.json')) {
+            $composer = json_decode($this->fileClient->read('composer.json'));
+            $nameParts = explode('/', $composer->name);
+            $name = array_pop($nameParts);
+        } else {
+            $dirs = explode(DIRECTORY_SEPARATOR, $this->fileClient->root());
+            $name = array_pop($dirs);
+        }
 
         return $this->getUrl() . "?" . http_build_query(['project_name' => $name, 'request_uid' => $this->requestUid]);
     }

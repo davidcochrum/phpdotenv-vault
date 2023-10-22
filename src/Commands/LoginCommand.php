@@ -36,7 +36,7 @@ class LoginCommand extends Command
                 $input,
                 $output,
                 $this->io,
-                $this->getHelper('question'),
+                $this->getHelper('question'), $this->httpClient,
                 $dotEnvMe,
                 $this->getYesOption()
             ))->run();

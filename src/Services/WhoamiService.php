@@ -13,12 +13,15 @@ class WhoamiService
 {
     /** @var SymfonyStyle */
     private $io;
+    /** @var Client */
+    private $client;
     /** @var bool */
     private $dotEnvMe;
 
-    public function __construct(SymfonyStyle $io, string $dotEnvMe = null)
+    public function __construct(SymfonyStyle $io, Client $client, string $dotEnvMe = null)
     {
         $this->io = $io;
+        $this->client = $client;
         $this->dotEnvMe = $dotEnvMe;
     }
 
@@ -43,7 +46,7 @@ class WhoamiService
     public function whoami(): void
     {
         try {
-            $resp = (new Client)->post($this->getUrl(), ['json' => [
+            $resp = $this->client->post('/whoami', ['json' => [
                 'DOTENV_ME' => $this->getMeUid(),
                 'DOTENV_VAULT' => Vars::getVaultValue(),
             ]]);
@@ -54,11 +57,6 @@ class WhoamiService
         } catch (Throwable $e) {
             throw new DotEnvVaultError($e->getMessage(), 'WHOAMI_ERROR', [], $e->getCode(), $e);
         }
-    }
-
-    private function getUrl(): string
-    {
-        return Vars::getApiUrl() . '/whoami';
     }
 
     private function getMeUid(): string

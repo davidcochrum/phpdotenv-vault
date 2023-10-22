@@ -26,7 +26,7 @@ class BuildCommand extends Command
         try {
             $this->checkEnvVault();
             $dotEnvMe = $this->getDotEnvMeOption();
-            $loginSvc = new LoginService($this->input, $this->output, $this->io, $this->getHelper('question'), $dotEnvMe, $this->getYesOption());
+            $loginSvc = new LoginService($this->input, $this->output, $this->io, $this->getHelper('question'), $this->httpClient, $dotEnvMe, $this->getYesOption());
             (new BuildService($this->io, $dotEnvMe))->run();
             return self::SUCCESS;
         } catch (DotEnvVaultError $e) {

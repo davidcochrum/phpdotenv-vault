@@ -6,6 +6,22 @@ use Dotenv\Dotenv;
 
 class Vars
 {
+    /** @var LocalFileClient|null */
+    private static $fileClient = null;
+
+    public static function getFileClient(): FileClientInterface
+    {
+        if (!self::$fileClient) {
+            self::$fileClient = new LocalFileClient(getcwd());
+        }
+        return self::$fileClient;
+    }
+
+    public static function setFileClient(FileClientInterface $fileClient): void
+    {
+        self::$fileClient = $fileClient;
+    }
+
     public static function getCli(): string
     {
         // read from process.env first, then .env.vault settings, then default
@@ -62,7 +78,7 @@ STR;
     public static function getVaultFilename(): string
     {
         // if .env.project (old) file exists use it. otherwise use .env.vault
-        if (file_exists(getcwd() . '/.env.project')) {
+        if (self::getFileClient()->exists('.env.project')) {
             return '.env.project';
         }
 
@@ -71,7 +87,7 @@ STR;
 
     public static function getVaultFilepath(): string
     {
-        return getcwd() . '/' . self::getVaultFilename();
+        return self::getFileClient()->path(self::getVaultFilename());
     }
 
     public static function getVaultKey(): string
@@ -85,10 +101,10 @@ STR;
 
     public static function getVaultParsed(): array
     {
-        if (!file_exists(self::getVaultFilepath())) {
+        if (!self::getFileClient()->exists(self::getVaultFilename())) {
             return [];
         }
-        return Dotenv::parse(file_get_contents(self::getVaultFilepath()));
+        return Dotenv::parse(self::getFileClient()->read(self::getVaultFilename()));
     }
 
     public static function getVaultValue(): string
@@ -98,7 +114,7 @@ STR;
 
     public static function hasExistingEnvVault(): bool
     {
-        return file_exists(self::getVaultFilepath());
+        return self::getFileClient()->exists(self::getVaultFilename());
     }
 
     public static function isMissingEnvVault(): bool
@@ -126,9 +142,14 @@ STR;
         return strlen($credential) !== 67;
     }
 
+    public static function getEnvMeFilename(): string
+    {
+        return '.env.me';
+    }
+
     public static function getEnvMeFilepath(): string
     {
-        return getcwd() . '/.env.me';
+        return self::getFileClient()->path(self::getEnvMeFilename());
     }
 
     public static function isMissingEnvMe(string $dotenvMe = null): bool
@@ -137,7 +158,7 @@ STR;
             return false;
         }
 
-        return !file_exists(self::getEnvMeFilepath());
+        return !self::getFileClient()->exists(self::getEnvMeFilename());
     }
 
     public static function emptyEnvMe(string $dotenvMe): bool
@@ -154,23 +175,28 @@ STR;
         if (self::isMissingEnvMe()) {
             return '';
         }
-        $parsed = Dotenv::parse(file_get_contents(self::getEnvMeFilepath()));
+        $parsed = Dotenv::parse(self::getFileClient()->read(self::getEnvMeFilename()));
         return $parsed['DOTENV_ME'] ?? '';
     }
 
     public static function missingEnv(string $filename = '.env'): bool
     {
-        return !file_exists(getcwd() . "/{$filename}");
+        return !self::getFileClient()->exists($filename);
     }
 
     public static function emptyEnv(string $filename = '.env'): bool
     {
-        return self::isFileEmpty(getcwd() . "/{$filename}");
+        return self::isFileEmpty($filename);
+    }
+
+    public static function getEnvKeysFilename(): string
+    {
+        return '.env.keys';
     }
 
     public static function getEnvKeysFilepath(): string
     {
-        return getcwd() . '/.env.keys';
+        return self::getFileClient()->path(self::getEnvKeysFilename());
     }
 
     public static function generateDotenvKey(string $environment): string
@@ -181,12 +207,12 @@ STR;
 
     public static function isMissingEnvKeys(): bool
     {
-        return !file_exists(self::getEnvKeysFilepath());
+        return !self::getFileClient()->exists(self::getEnvKeysFilename());
     }
 
     public static function isEmptyEnvKeys(): bool
     {
-        return self::isFileEmpty(self::getEnvKeysFilepath());
+        return self::isFileEmpty(self::getEnvKeysFilename());
     }
 
     public static function parseEnvKeys(): array
@@ -195,16 +221,16 @@ STR;
             return [];
         }
 
-        return Dotenv::parse(file_get_contents(self::getEnvKeysFilepath()));
+        return Dotenv::parse(self::getFileClient()->read(self::getEnvKeysFilename()));
     }
 
-    private static function isFileEmpty(string $filepath): bool
+    private static function isFileEmpty(string $filename): bool
     {
-        if (!file_exists($filepath)) {
+        if (!self::getFileClient()->exists($filename)) {
             return true;
         }
 
-        $contents = file_get_contents($filepath);
-        return $contents === false || strlen($contents) < 1;
+        $contents = self::getFileClient()->read($filename);
+        return strlen($contents) < 1;
     }
 }

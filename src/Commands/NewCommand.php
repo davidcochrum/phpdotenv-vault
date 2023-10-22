@@ -27,6 +27,9 @@ class NewCommand extends Command
                 $output,
                 $this->io,
                 $this->getHelper('question'),
+                $this->browser,
+                $this->httpClient,
+                $this->fileClient,
                 $input->getArgument('DOTENV_VAULT'),
                 $this->getYesOption()
             ))->run();

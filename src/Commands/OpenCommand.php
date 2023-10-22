@@ -31,6 +31,7 @@ class OpenCommand extends Command
                 $output,
                 $this->io,
                 $this->getHelper('question'),
+                $this->browser,
                 $input->getArgument('environment'),
                 $this->getYesOption()
             ))->run();

@@ -5,7 +5,7 @@ namespace DotenvVault\Services;
 use DotenvVault\DotEnvVaultError;
 use DotenvVault\Vars;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\BadResponseException;
 use Loilo\NativeOpen\NativeOpen;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
@@ -23,6 +23,8 @@ class LoginService
     private $io;
     /** @var QuestionHelper */
     private $helper;
+    /** @var Client */
+    private $httpClient;
     /** @var string|null */
     private $dotEnvMe;
     /** @var bool */
@@ -30,12 +32,13 @@ class LoginService
     /** @var string */
     private $requestUid;
 
-    public function __construct(InputInterface $input, OutputInterface $output, SymfonyStyle $io, QuestionHelper $helper, string $dotEnvMe = null, bool $yes = false)
+    public function __construct(InputInterface $input, OutputInterface $output, SymfonyStyle $io, QuestionHelper $helper, Client $httpClient, string $dotEnvMe = null, bool $yes = false)
     {
         $this->input = $input;
         $this->output = $output;
         $this->io = $io;
         $this->helper = $helper;
+        $this->httpClient = $httpClient;
         $this->dotEnvMe = $dotEnvMe;
         $this->yes = $yes;
         $this->requestUid = Vars::generateRequestUid();
@@ -93,7 +96,6 @@ class LoginService
      */
     private function check(bool $tip): void
     {
-        $client = new Client();
         $url = Vars::buildApiActionUrl('check', ['requestUid' => $this->requestUid]);
         $options = [
             'json' => [
@@ -108,10 +110,10 @@ class LoginService
             $checkCount++;
             $this->io->progressAdvance();
             try {
-                $response = $client->post($url, $options);
+                $response = $this->httpClient->post($url, $options);
                 $data = json_decode($response->getBody());
                 $meUid = $data->data->meUid;
-            } catch (GuzzleException $e) {
+            } catch (BadResponseException $e) {
                 // check every 2 seconds
                 sleep(1);
                 $this->io->progressAdvance();

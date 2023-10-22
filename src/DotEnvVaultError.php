@@ -11,7 +11,7 @@ class DotEnvVaultError extends Exception
     {
         $data = json_decode($response);
         if ($error1 = $data->errors[0] ?? null) {
-            return new self($error1->message,$error1->code ?? $defaultCodeString, $error1->suggestions ?? []);
+            return new self($error1->message, $error1->code ?? $defaultCodeString, $error1->suggestions ?? []);
         }
         return new self($defaultCodeString, $defaultCodeString);
     }

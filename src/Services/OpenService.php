@@ -2,6 +2,7 @@
 
 namespace DotenvVault\Services;
 
+use DotenvVault\BrowserInterface;
 use DotenvVault\Vars;
 use Loilo\NativeOpen\NativeOpen;
 use Symfony\Component\Console\Helper\QuestionHelper;
@@ -20,17 +21,20 @@ class OpenService
     private $io;
     /** @var QuestionHelper */
     private $helper;
+    /** @var BrowserInterface */
+    private $browser;
     /** @var string */
     private $environment;
     /** @var bool */
     private $yes;
 
-    public function __construct(InputInterface $input, OutputInterface $output, SymfonyStyle $io, QuestionHelper $helper, string $environment, bool $yes)
+    public function __construct(InputInterface $input, OutputInterface $output, SymfonyStyle $io, QuestionHelper $helper, BrowserInterface $browser, string $environment, bool $yes)
     {
         $this->input = $input;
         $this->output = $output;
         $this->io = $io;
         $this->helper = $helper;
+        $this->browser = $browser;
         $this->environment = $environment;
         $this->yes = $yes;
     }
@@ -48,7 +52,7 @@ class OpenService
         }
         $this->io->writeln('Opening project page...');
         $this->io->writeln("Opening browser to {$openUrl}");
-        NativeOpen::open($openUrl);
+        $this->browser->open($openUrl);
         $command = Vars::missingEnv() ? 'pull' : 'push';
         $this->io->writeln([
             '',

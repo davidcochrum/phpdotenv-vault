@@ -24,7 +24,7 @@ class WhoamiCommand extends Command
         try {
             $this->checkEnvVault();
 
-            (new WhoamiService($this->io, $this->getDotEnvMeOption()))->run();
+            (new WhoamiService($this->io, $this->httpClient, $this->getDotEnvMeOption()))->run();
 
             return self::SUCCESS;
         } catch (DotEnvVaultError $e) {

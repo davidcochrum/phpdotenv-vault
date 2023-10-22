@@ -2,9 +2,14 @@
 
 namespace DotenvVault\Commands;
 
+use DotenvVault\BrowserInterface;
+use DotenvVault\DefaultBrowser;
 use DotenvVault\DotEnvVaultError;
+use DotenvVault\FileClientInterface;
+use DotenvVault\LocalFileClient;
 use DotenvVault\Services\LoginService;
 use DotenvVault\Vars;
+use GuzzleHttp\Client;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -12,18 +17,45 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class Command extends \Symfony\Component\Console\Command\Command
 {
+    public const SUCCESS = 0;
+    public const FAILURE = 1;
+
     /** @var InputInterface */
     protected $input;
     /** @var OutputInterface */
     protected $output;
     /** @var SymfonyStyle */
     protected $io;
+    /** @var BrowserInterface|null */
+    protected $browser = null;
+    /** @var FileClientInterface */
+    protected $fileClient;
+    /** @var Client|null */
+    protected $httpClient = null;
 
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         $this->input = $input;
         $this->output = $output;
         $this->io = new SymfonyStyle($input, $output);
+        $this->browser = $this->browser ?? new DefaultBrowser();
+        $this->fileClient = $this->fileClient ?? new LocalFileClient(getcwd());
+        $this->httpClient = $this->httpClient ?? new Client();
+    }
+
+    public function setBrowser(BrowserInterface $browser): void
+    {
+        $this->browser = $browser;
+    }
+
+    public function setFileClient(FileClientInterface $client): void
+    {
+        $this->fileClient = $client;
+    }
+
+    public function setHttpClient(Client $client): void
+    {
+        $this->httpClient = $client;
     }
 
     /**
@@ -51,7 +83,7 @@ abstract class Command extends \Symfony\Component\Console\Command\Command
     {
         $dotEnvMe = $this->getDotEnvMeOption() ?: getenv('DOTENV_ME');
         $yes = $this->getYesOption();
-        $loginService = new LoginService($this->input, $this->output, $this->io, $this->getHelper('question'), null, $yes);
+        $loginService = new LoginService($this->input, $this->output, $this->io, $this->getHelper('question'), $this->httpClient, null, $yes);
         if (Vars::isMissingEnvMe($dotEnvMe)) {
             $loginService->login(false);
             return Vars::getMeValue();
@@ -82,7 +114,12 @@ abstract class Command extends \Symfony\Component\Console\Command\Command
 
     protected function handleVaultError(DotEnvVaultError $error): void
     {
-        $this->io->error($error->getMessage());
-        $this->io->writeln($error->getSuggestions());
+        $this->io->error([$error->getCodeString(), $error->getMessage()]);
+        $this->io->writeln(array_map(
+            function (string $suggestion) {
+                return "Suggestion: {$suggestion}";
+            },
+            $error->getSuggestions()
+        ));
     }
 }
