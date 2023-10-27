@@ -16,7 +16,7 @@ The extended standard lets you load encrypted secrets from your `.env.vault` fil
 ## 🌱 Install
 
 ```shell
-$ composer require dotenv-org/phpdotenv-vault
+composer require davidcochrum/phpdotenv-vault
 ```
 
 ## 🏗️ Usage
